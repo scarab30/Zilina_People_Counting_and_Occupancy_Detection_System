@@ -12,8 +12,8 @@ i2c = I2C(0, scl=Pin(6), sda=Pin(5), freq=400_000)
 # Pas de LPN cable -> on cree le capteur sans
 tof = VL53L5CXMP(i2c)
 
-print("Reset du capteur...")
-tof.reset()
+# print("Reset du capteur...")
+# tof.reset()
 
 if not tof.is_alive():
     raise ValueError("VL53L5CX non detecte")
