@@ -25,6 +25,10 @@ Measured and processed data can be displayed through a web interface, where user
 - ESP32-S3 XIAO
 - VL53L5CX Sensor module (Satel)
 
+## How to install 
+
+coming soon...
+
 ## draft 
 
 pour la librairie sensor module
@@ -34,10 +38,15 @@ pour la librairie sensor module
 // ce mettre dans le folder du repo
 
 ``mpremote connect COM6 mkdir :lib``
+
 ``mpremote connect COM6 mkdir :lib/vl53l5cx``
+
 ``mpremote connect COM6 cp vl53l5cx/__init__.py :lib/vl53l5cx/__init__.py``
+
 ``mpremote connect COM6 cp vl53l5cx/_config_file.py :lib/vl53l5cx/_config_file.py``
+
 ``mpremote connect COM6 cp vl53l5cx/mp.py :lib/vl53l5cx/mp.py``
+
 ``mpremote connect COM6 cp vl53l5cx/vl_fw_config.bin :lib/vl53l5cx/vl_fw_config.bin``
 
 COM6 = le port que l'on utilise (cf : ``mpremote connect list``)
