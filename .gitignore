@@ -1,1 +1,8 @@
 /node_modules
+
+# Secrets - ne jamais versionner
+secrets.py
+
+# Python
+__pycache__/
+*.pyc
