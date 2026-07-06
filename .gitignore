@@ -6,3 +6,6 @@ secrets.py
 # Python
 __pycache__/
 *.pyc
+
+# config moquitto en local 
+mosquitto.conf

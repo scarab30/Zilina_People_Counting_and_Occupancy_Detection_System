@@ -49,5 +49,11 @@ pour la librairie sensor module
 
 ``mpremote connect COM6 cp vl53l5cx/vl_fw_config.bin :lib/vl53l5cx/vl_fw_config.bin``
 
+ajouter également le protocole mqtt 
+
+``mpremote connect COM6 mip install umqtt.simple``
+
 COM6 = le port que l'on utilise (cf : ``mpremote connect list``)
+
+
 
