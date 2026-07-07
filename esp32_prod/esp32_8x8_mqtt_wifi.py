@@ -13,9 +13,9 @@ from secrets import WIFI_SSID, WIFI_PASSWORD, MQTT_BROKER, MQTT_PORT
 # =========================================================================
 # CONFIG
 # =========================================================================
-CLIENT_ID = "xiao-esp32-tof"
-SENSOR_ID = "capteur-porte-1"      # identifiant logique de ce capteur
-TOPIC = b"tof/capteur-porte-1/matrice"
+CLIENT_ID = "protoype" # possiblement une adresse mac ici 
+SENSOR_ID = "protoype"      # identifiant logique de ce capteur
+TOPIC = b"tof/matrice/post"
 
 SDA_PIN = 5
 SCL_PIN = 6
