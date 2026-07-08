@@ -1,3 +1,5 @@
 esptool
 mpremote
 paho-mqtt
+fastapi 
+uvicorn 

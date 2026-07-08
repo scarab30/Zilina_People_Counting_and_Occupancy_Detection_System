@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Capteur ToF - Live</title>
+    <style>
+        :root {
+            color-scheme: dark;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #0d1117;
+            color: #e6edf3;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        }
+
+        h1 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 0 0 4px;
+        }
+
+        .meta {
+            font-size: .85rem;
+            color: #7d8590;
+            margin-bottom: 16px;
+        }
+
+        .meta span {
+            color: #e6edf3;
+        }
+
+        #count {
+            font-size: 2.4rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            letter-spacing: .02em;
+        }
+
+        #count .lbl {
+            font-size: .8rem;
+            color: #7d8590;
+            font-weight: 400;
+        }
+
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(8, 46px);
+            grid-template-rows: repeat(8, 46px);
+            gap: 3px;
+        }
+
+        .cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .7rem;
+            border-radius: 4px;
+            background: #161b22;
+            color: #c9d1d9;
+            transition: background-color .08s linear;
+        }
+
+        .cell.invalid {
+            color: #444c56;
+        }
+
+        #status {
+            margin-top: 16px;
+            font-size: .8rem;
+            color: #7d8590;
+        }
+
+        .warn {
+            color: #d29922 !important;
+        }
+
+        #recal {
+            margin-top: 14px;
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: 1px solid #30363d;
+            background: #21262d;
+            color: #e6edf3;
+            font-family: inherit;
+            font-size: .8rem;
+            cursor: pointer;
+        }
+
+        #recal:hover {
+            background: #30363d;
+        }
+
+        #recal:active {
+            transform: translateY(1px);
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Capteur Time-of-Flight</h1>
+    <div class="meta">appareil : <span id="sensor">—</span> &nbsp;|&nbsp; t = <span id="tval">—</span></div>
+    <div id="count"><span id="countval">0</span> <span class="lbl">dans la zone</span></div>
+    <div id="grid"></div>
+    <div id="status">Connexion...</div>
+    <button id="recal">Recalibrer</button>
+
+    <script>
+        const COLS = 8;
+        const STATUS_VALID = 5;
+        const DIST_MIN = 0;
+        const DIST_MAX = 2000;
+
+        const grid = document.getElementById("grid");
+        const cells = [];
+        for (let i = 0; i < COLS * COLS; i++) {
+            const c = document.createElement("div");
+            c.className = "cell";
+            grid.appendChild(c);
+            cells.push(c);
+        }
+
+        function couleur(d) {
+            const r = Math.max(0, Math.min(1, (d - DIST_MIN) / (DIST_MAX - DIST_MIN)));
+            const hue = r * 220;   // 0=rouge (proche) -> 220=bleu (loin)
+            return `hsl(${hue}, 70%, 45%)`;
+        }
+
+        function rendu(f) {
+            document.getElementById("sensor").textContent = f.sensor ?? "—";
+            document.getElementById("tval").textContent = f.t ?? "—";
+            document.getElementById("countval").textContent = f.count ?? 0;
+            const dist = f.distance, st = f.status;
+            for (let i = 0; i < cells.length; i++) {
+                if (st[i] === STATUS_VALID) {
+                    cells[i].classList.remove("invalid");
+                    cells[i].style.backgroundColor = couleur(dist[i]);
+                    cells[i].textContent = dist[i];
+                } else {
+                    cells[i].classList.add("invalid");
+                    cells[i].style.backgroundColor = "#161b22";
+                    cells[i].textContent = "×";
+                }
+            }
+            const statusEl = document.getElementById("status");
+            if (!f.calibrated) {
+                statusEl.textContent = "Calibration en cours... ne rien mettre sous le capteur";
+                statusEl.classList.add("warn");
+            } else {
+                statusEl.textContent = "Connecté (live)";
+                statusEl.classList.remove("warn");
+            }
+        }
+
+        const proto = location.protocol === "https:" ? "wss" : "ws";
+        const ws = new WebSocket(`${proto}://${location.host}/ws`);
+        ws.onopen = () => { document.getElementById("status").textContent = "Connecté"; };
+        ws.onclose = () => { document.getElementById("status").textContent = "Déconnecté"; };
+        ws.onmessage = (ev) => { rendu(JSON.parse(ev.data)); };
+
+        document.getElementById("recal").addEventListener("click", async () => {
+            try {
+                await fetch("/recalibrate", { method: "POST" });
+                // Le retour visuel ("Calibration en cours...") arrive tout seul via le WS
+                // des que le serveur repasse calibrated=false.
+            } catch (e) {
+                document.getElementById("status").textContent = "Erreur recalibration";
+            }
+        });
+    </script>
+</body>
+
+</html>

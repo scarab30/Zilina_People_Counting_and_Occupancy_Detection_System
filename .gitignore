@@ -9,3 +9,6 @@ __pycache__/
 
 # config moquitto en local 
 mosquitto.conf
+
+#sqlite db 
+frames.db
