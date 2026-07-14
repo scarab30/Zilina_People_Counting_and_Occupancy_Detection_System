@@ -12,3 +12,4 @@ mosquitto.conf
 
 #sqlite db 
 frames.db
+.db

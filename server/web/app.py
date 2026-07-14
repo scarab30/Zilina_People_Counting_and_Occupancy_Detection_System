@@ -140,6 +140,7 @@ def init_db():
             id      INTEGER PRIMARY KEY AUTOINCREMENT,
             moment  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             sensor  TEXT,
+            room    TEXT,
             sens    TEXT,      -- ENTREE / SORTIE
             count   INTEGER    -- count courant apres ce passage
         )
@@ -148,11 +149,11 @@ def init_db():
     con.close()
 
 
-def enregistrer_passage(sensor, sens, count):
+def enregistrer_passage(sensor, room, sens, count):
     con = sqlite3.connect(DB_PATH)
     con.execute(
-        "INSERT INTO passages (sensor, sens, count) VALUES (?, ?, ?)",
-        (sensor, sens, count),
+        "INSERT INTO passages (sensor, room, sens, count) VALUES (?, ?, ?, ?)",
+        (sensor, room, sens, count),
     )
     con.commit()
     con.close()
@@ -181,7 +182,9 @@ def on_message(client, userdata, msg):
         _calibrated = counter.calibrated
 
     if evt is not None:
-        enregistrer_passage(payload.get("sensor"), evt, counter.count)
+        enregistrer_passage(
+            payload.get("sensor"), payload.get("room"), evt, counter.count
+        )
         print("{} | count = {}".format(evt, counter.count))
 
 
@@ -219,6 +222,52 @@ async def index():
 async def recalibrate():
     counter.request_recalibration()
     return {"ok": True}
+
+
+# --- Historique ---
+def _query(sql, params=()):
+    con = sqlite3.connect(DB_PATH)
+    con.row_factory = sqlite3.Row
+    rows = con.execute(sql, params).fetchall()
+    con.close()
+    return [dict(r) for r in rows]
+
+
+@app.get("/history", response_class=HTMLResponse)
+async def history_page():
+    with open("history.html", encoding="utf-8") as f:
+        return f.read()
+
+
+@app.get("/api/stats")
+async def api_stats():
+    rows = _query("SELECT sens, COUNT(*) AS n FROM passages GROUP BY sens")
+    stats = {r["sens"]: r["n"] for r in rows}
+    last = _query("SELECT count FROM passages ORDER BY id DESC LIMIT 1")
+    return {
+        "entrees": stats.get("ENTREE", 0),
+        "sorties": stats.get("SORTIE", 0),
+        "occupation": last[0]["count"] if last else 0,
+    }
+
+
+@app.get("/api/timeseries")
+async def api_timeseries():
+    # Occupation dans le temps : le champ count est deja le cumul apres passage
+    return _query("SELECT moment, count FROM passages ORDER BY id")
+
+
+@app.get("/api/hourly")
+async def api_hourly():
+    # Entrees / sorties agregees par heure (moment est en UTC)
+    return _query("""
+        SELECT strftime('%Y-%m-%d %H:00', moment) AS heure,
+               SUM(CASE WHEN sens='ENTREE' THEN 1 ELSE 0 END) AS entrees,
+               SUM(CASE WHEN sens='SORTIE' THEN 1 ELSE 0 END) AS sorties
+        FROM passages
+        GROUP BY heure
+        ORDER BY heure
+    """)
 
 
 @app.websocket("/ws")

@@ -15,6 +15,7 @@ from secrets import WIFI_SSID, WIFI_PASSWORD, MQTT_BROKER, MQTT_PORT
 # =========================================================================
 CLIENT_ID = "protoype" # possiblement une adresse mac ici 
 SENSOR_ID = "protoype"      # identifiant logique de ce capteur
+ROOM_ID = "piece_protoype" # identifiant de la pièce (group up des capteurs d'une meme piece)
 TOPIC = b"tof/matrice/post"
 
 SDA_PIN = 5
@@ -77,6 +78,7 @@ def main():
                 # Le serveur ne garde que les zones ou status == 5 (STATUS_VALID).
                 payload = {
                     "sensor": SENSOR_ID,
+                    "room": ROOM_ID,
                     "t": time.ticks_ms(),      # horodatage local ESP (ms)
                     "cols": COLS,              # resolution (8 => grille 8x8)
                     "distance": list(results.distance_mm),

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Capteur ToF - Historique</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <style>
+        :root {
+            color-scheme: dark;
+        }
+
+        body {
+            margin: 0;
+            padding: 32px;
+            background: #0d1117;
+            color: #e6edf3;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        }
+
+        a {
+            color: #58a6ff;
+            text-decoration: none;
+            font-size: .85rem;
+        }
+
+        h1 {
+            font-size: 1.2rem;
+            margin: 8px 0 24px;
+        }
+
+        .cards {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+        }
+
+        .card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 16px 24px;
+            min-width: 120px;
+        }
+
+        .card .val {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .card .lbl {
+            font-size: .75rem;
+            color: #7d8590;
+        }
+
+        .chart-box {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .chart-box h2 {
+            font-size: .9rem;
+            font-weight: 600;
+            margin: 0 0 16px;
+            color: #c9d1d9;
+        }
+    </style>
+</head>
+
+<body>
+    <a href="/">← retour au live</a>
+    <h1>Historique des passages</h1>
+
+    <div class="cards">
+        <div class="card">
+            <div class="val" id="occupation">—</div>
+            <div class="lbl">occupation actuelle</div>
+        </div>
+        <div class="card">
+            <div class="val" id="entrees">—</div>
+            <div class="lbl">entrées (total)</div>
+        </div>
+        <div class="card">
+            <div class="val" id="sorties">—</div>
+            <div class="lbl">sorties (total)</div>
+        </div>
+    </div>
+
+    <div class="chart-box">
+        <h2>Occupation dans le temps</h2>
+        <canvas id="chartOccupation" height="90"></canvas>
+    </div>
+
+    <div class="chart-box">
+        <h2>Entrées / sorties par heure</h2>
+        <canvas id="chartHoraire" height="90"></canvas>
+    </div>
+
+    <script>
+        const GRID = "#30363d", TXT = "#7d8590";
+
+        async function charger() {
+            const [stats, ts, hourly] = await Promise.all([
+                fetch("/api/stats").then(r => r.json()),
+                fetch("/api/timeseries").then(r => r.json()),
+                fetch("/api/hourly").then(r => r.json()),
+            ]);
+
+            document.getElementById("occupation").textContent = stats.occupation;
+            document.getElementById("entrees").textContent = stats.entrees;
+            document.getElementById("sorties").textContent = stats.sorties;
+
+            // Courbe d'occupation
+            new Chart(document.getElementById("chartOccupation"), {
+                type: "line",
+                data: {
+                    labels: ts.map(r => r.moment),
+                    datasets: [{
+                        label: "occupation",
+                        data: ts.map(r => r.count),
+                        borderColor: "#58a6ff",
+                        backgroundColor: "rgba(88,166,255,.15)",
+                        fill: true, tension: .2, pointRadius: 0, stepped: true,
+                    }],
+                },
+                options: {
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: TXT, maxTicksLimit: 8 }, grid: { color: GRID } },
+                        y: { ticks: { color: TXT }, grid: { color: GRID }, beginAtZero: true },
+                    },
+                },
+            });
+
+            // Histogramme horaire
+            new Chart(document.getElementById("chartHoraire"), {
+                type: "bar",
+                data: {
+                    labels: hourly.map(r => r.heure),
+                    datasets: [
+                        { label: "entrées", data: hourly.map(r => r.entrees), backgroundColor: "#3fb950" },
+                        { label: "sorties", data: hourly.map(r => r.sorties), backgroundColor: "#f85149" },
+                    ],
+                },
+                options: {
+                    plugins: { legend: { labels: { color: TXT } } },
+                    scales: {
+                        x: { ticks: { color: TXT, maxTicksLimit: 12 }, grid: { color: GRID } },
+                        y: { ticks: { color: TXT }, grid: { color: GRID }, beginAtZero: true },
+                    },
+                },
+            });
+        }
+
+        charger();
+    </script>
+</body>
+
+</html>
